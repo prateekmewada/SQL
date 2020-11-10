@@ -1,0 +1,95 @@
+CREATE OR ALTER PROCEDURE [dbo].[ReportCustomerTurnover](
+  @CHOICE int = 1
+, @YEAR int = 2013)
+
+AS
+BEGIN
+	IF @CHOICE = 1
+		BEGIN
+			Select P1.CustomerName
+			, ISNULL(P1.[01], 0) as "Jan", ISNULL(P1.[02], 0) as "Feb"
+			, ISNULL(P1.[03], 0) as "Mar", ISNULL(P1.[04], 0) as "Apr"
+			, ISNULL(P1.[05], 0) as "May", ISNULL(P1.[06], 0) as "Jun"
+			, ISNULL(P1.[07], 0) as "Jul", ISNULL(P1.[08], 0) as "Aug"
+			, ISNULL(P1.[09], 0) as "Sep", ISNULL(P1.[10], 0) as "Oct"
+			, ISNULL(P1.[11], 0) as "Nov", ISNULL(P1.[12], 0) as "Dec"
+			from  (
+			Select * from 
+			(Select main.CustomerName, main.[Month], sum(main.Turnover) as "Turnover"
+			from (Select distinct C.CustomerName
+			, MONTH(Inv.InvoiceDate) as [Month]
+			, (Select SUM(IL.Quantity*IL.UnitPrice)
+			from Sales.InvoiceLines as IL
+			, Sales.Invoices as I
+			where IL.InvoiceID = I.InvoiceID
+			AND I.CustomerID = C.CustomerID
+			AND YEAR(I.InvoiceDate) = @YEAR
+			AND I.InvoiceDate = Inv.InvoiceDate
+			AND I.InvoiceID = Inv.InvoiceID
+			AND IL.InvoiceID = Inv.InvoiceID
+			) as "Turnover"
+			FROM
+			Sales.Customers as C
+			, Sales.Invoices as Inv
+			WHERE C.CustomerID = Inv.CustomerID
+		--	AND	C.CustomerName in( 'Abhra Ganguly' , 'Abel Tatarescu')
+			GROUP BY C.CustomerName, C.CustomerID, Inv.InvoiceDate, Inv.InvoiceID) main
+			group by main.CustomerName, main.[Month]) as T
+			PIVOT
+			(SUM("Turnover")
+			FOR "Month" in ([01], [02], [03], [04], [05], [06], [07], [08], [09], [10], [11], [12])) as PivotTable
+			) as P1
+		END;
+	ELSE IF @CHOICE = 2
+		BEGIN
+			Select P2.CustomerName
+			, (ISNULL(P2.[01], 0) + ISNULL(P2.[02], 0) + ISNULL(P2.[03], 0)) as "Q1"
+			, (ISNULL(P2.[04], 0) + ISNULL(P2.[05], 0) + ISNULL(P2.[06], 0)) as "Q2"
+			, (ISNULL(P2.[07], 0) + ISNULL(P2.[08], 0) + ISNULL(P2.[09], 0)) as "Q3"
+			, (ISNULL(P2.[10], 0) + ISNULL(P2.[11], 0) + ISNULL(P2.[12], 0)) as "Q4"
+			from  (
+			Select * from 
+			(Select main.CustomerName, main.[Month], sum(main.Turnover) as "Turnover"
+			from (Select distinct C.CustomerName
+			, MONTH(Inv.InvoiceDate) as [Month]
+			, (Select SUM(IL.Quantity*IL.UnitPrice)
+			from Sales.InvoiceLines as IL
+			, Sales.Invoices as I
+			where IL.InvoiceID = I.InvoiceID
+			AND I.CustomerID = C.CustomerID
+			AND YEAR(I.InvoiceDate) = @YEAR
+			AND I.InvoiceDate = Inv.InvoiceDate
+			AND I.InvoiceID = Inv.InvoiceID
+			AND IL.InvoiceID = Inv.InvoiceID
+			) as "Turnover"
+			FROM
+			Sales.Customers as C
+			, Sales.Invoices as Inv
+			WHERE C.CustomerID = Inv.CustomerID
+		--	AND	C.CustomerName in( 'Abhra Ganguly' , 'Abel Tatarescu')
+			GROUP BY C.CustomerName, C.CustomerID, Inv.InvoiceDate, Inv.InvoiceID) main
+			group by main.CustomerName, main.[Month]) as T
+			PIVOT
+			(SUM("Turnover")
+			FOR "Month" in ([01], [02], [03], [04], [05], [06], [07], [08], [09], [10], [11], [12])) as PivotTable
+			) as P2
+		END;
+	ELSE IF @CHOICE = 3
+		BEGIN
+			Select P.CustomerName, ISNULL(P.[2013], 0) as "2013", ISNULL(P.[2014], 0) as "2014", ISNULL(P.[2015], 0) as "2015", ISNULL(P.[2016], 0) as "2016"
+			from  (Select * from 
+			(Select C.CustomerName
+			, YEAR(I.InvoiceDate) "Year"
+			, SUM(IL.Quantity*IL.UnitPrice) as "Turnover"
+			FROM
+			Sales.Customers as C
+			, Sales.Invoices as I
+			, Sales.InvoiceLines as IL
+			WHERE C.CustomerID = I.CustomerID
+			AND I.InvoiceID = IL.InvoiceID
+			GROUP BY C.CustomerName, I.InvoiceDate, I.CustomerID) as T
+			PIVOT
+			(SUM("Turnover") 
+			FOR "Year" in ([2013], [2014], [2015], [2016])) as PivotTable) as P
+		END;
+END;

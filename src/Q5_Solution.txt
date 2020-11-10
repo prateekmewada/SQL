@@ -1,0 +1,6 @@
+--Solution:
+Select * 
+FROM dbo.Customer as C 
+WHERE (Select sum(Pur.Qty) 
+		FROM dbo.Purchase as Pur 
+		WHERE Pur.CustomerId = C.CustomerId) > 50

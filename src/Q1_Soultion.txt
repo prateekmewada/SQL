@@ -1,0 +1,29 @@
+SELECT cust.CustomerID
+, cust.CustomerName 
+, count(distinct ord.OrderID) AS "TotalNBOrders"
+, count(distinct inv.InvoiceID) AS "TotalNBInvoices"
+, sum(ol.UnitPrice* ol.Quantity) AS "OrdersTotalValue"
+, sum(il.UnitPrice* il.Quantity) AS "InvoicesTotalValue"
+, abs(sum(ol.UnitPrice* ol.Quantity) - sum(il.UnitPrice* il.Quantity))	AS "AbsoluteValueDifference"
+from Sales.Customers as cust
+, Sales.Orders as ord
+, Sales.OrderLines as ol
+, Sales.Invoices as inv
+, Sales.InvoiceLines as il
+WHERE inv.CustomerID = ord.CustomerID
+AND inv.CustomerID = cust.CustomerID
+AND inv.InvoiceID = il.InvoiceID
+AND il.StockItemID = ol.StockItemID
+AND ord.OrderID = ol.OrderID
+AND ord.OrderID = inv.OrderID 
+AND EXISTS (
+		SELECT *
+		FROM Sales.Invoices as I 
+		WHERE ord.OrderID = I.OrderID
+		AND I.InvoiceID = inv.InvoiceID
+	)
+--AND cust.CustomerID = 1060
+GROUP BY cust.CustomerID
+, cust.BillToCustomerID
+, cust.CustomerName
+ORDER BY 7 desc, 3, 2

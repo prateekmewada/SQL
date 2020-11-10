@@ -1,0 +1,28 @@
+-- Query to Identify the first InvoiceLine of the first Invoice for CustomerID 1060
+
+Select min(InvoiceLineID) from Sales.InvoiceLines 
+where InvoiceID = (Select InvoiceID from Sales.Invoices where CustomerID = 1060 AND InvoiceDate = 
+(select min(InvoiceDate) from Sales.Invoices where CustomerID = 1060))
+
+--Result:
+--InvoiceLineID = 225394 --(InvoiceID = 69627)
+
+
+BEGIN TRANSACTION T1;
+
+--Update Query:
+update Sales.InvoiceLines set UnitPrice = UnitPrice+20 where InvoiceLineID = 225394
+COMMIT;
+
+
+--Verification:
+Select I.CustomerID, C.CustomerName, sum(IL.UnitPrice*IL.Quantity) as "InvoiceTotal"
+from 
+Sales.Invoices as I
+, Sales.InvoiceLines as IL
+, Sales.Customers as C
+where C.CustomerID = I.CustomerID
+AND I.InvoiceID = IL.InvoiceID
+AND I.CustomerID = 1060
+AND I.InvoiceID = 69627
+group by I.CustomerID, C.CustomerName

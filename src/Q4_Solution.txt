@@ -1,0 +1,48 @@
+Select P11.CustomerCategoryName
+, MAX(P11.MaxLoss) as "MaxLoss" 
+, P11.CustomerName
+, P11.CustomerID
+FROM (
+Select CuCat.CustomerCategoryName
+, SUM(OrdL.UnitPrice*OrdL.Quantity) as "MaxLoss"
+, Cus.CustomerID as "CustomerID"
+, Cus.CustomerName
+FROM
+Sales.CustomerCategories as CuCat
+, Sales.Customers as Cus
+, Sales.OrderLines as OrdL
+, Sales.Orders as Ord
+WHERE Cus.CustomerCategoryID = CuCat.CustomerCategoryID
+AND  Ord.CustomerID = Cus.CustomerID
+AND Ord.OrderID = OrdL.OrderID
+AND Ord.OrderID not in (Select OrderID from Sales.Invoices)
+GROUP BY
+CuCat.CustomerCategoryName, 
+Cus.CustomerName
+, Cus.CustomerID
+, Cus.BillToCustomerID
+) as P11 
+WHERE P11.MaxLoss IN (Select
+MAX(P1.MaxLoss) as "MaxLoss" 
+FROM (
+Select CC.CustomerCategoryName
+, SUM(OL.UnitPrice*OL.Quantity) as "MaxLoss"
+, C.CustomerName
+, C.CustomerID
+FROM
+Sales.CustomerCategories as CC
+, Sales.Customers as C
+, Sales.OrderLines as OL
+, Sales.Orders as O
+WHERE C.CustomerCategoryID = CC.CustomerCategoryID
+AND  O.CustomerID = C.CustomerID
+AND O.OrderID = OL.OrderID
+AND O.OrderID not in (Select OrderID from Sales.Invoices)
+GROUP BY
+CC.CustomerCategoryName
+, C.CustomerName
+, C.CustomerID
+) as P1 GROUP BY CustomerCategoryName)
+GROUP BY P11.CustomerCategoryName
+, P11.CustomerName, P11.CustomerID
+ORDER BY 2 desc
